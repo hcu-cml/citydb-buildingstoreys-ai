@@ -4,7 +4,7 @@ The model employed in our work is YOLOv11-l, as provided in the official Ultraly
 
 ## Cite
 
-<pre><code>@Article{isprs-annals-X-4-W6-2025-9-2025,
+<pre><code>@Article{isprs-annals-X-,
 AUTHOR = {Arzoumanidis, L. and As Samee, A.M. Kanna, E. and Nguyen, S. H. and Dehbi, Y.},
 TITLE = {Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images},
 JOURNAL = {ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences},
