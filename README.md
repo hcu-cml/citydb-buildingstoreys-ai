@@ -1,39 +1,4 @@
-# CityDB Building Storeys AI
 
-Reference implementation for
-
-> Arzoumanidis, L., As Samee, A.M., Kanna, E., Nguyen, S. H., Dehbi, Y.
-> *Domain-Adaptive Object Detection for Enriching Semantic 3D City Models
-> with Building Storeys from Street-View Images.*
-> ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial
-> Information Sciences, 2026.
-
-End-to-end pipeline for estimating the number of above-ground storeys of
-buildings by combining building footprints with Mapillary street-level
-imagery and a YOLOv3 window detector (via Ultralytics), packaged as a
-reproducible, Dockerized CLI.
-
-## Method
-
-The pipeline runs in three stages:
-
-1. **Fetch** (`bfe fetch`). Building footprints are loaded from either a
-   local LoD2/LoD3 GeoJSON (e.g. CityGML exports from German state
-   geoportals) or OpenStreetMap. Mapillary images are pulled from the Graph
-   API over a configurable bounding box, split into a grid of sub-cells to
-   work around per-request limits. Each building centroid is matched to the
-   street-level image whose compass bearing points toward it within a
-   configurable tolerance and distance.
-2. **Detect** (`bfe detect`). A YOLOv3 model (loaded via Ultralytics)
-   detects window bounding boxes on each matched image. The vertical gaps
-   between window y-centers are clustered by KMeans, a Gaussian Mixture
-   Model, and DBSCAN; the larger-mean cluster is treated as inter-floor
-   gaps. The final storey count is the statistical mode (ensemble voting)
-   of the three per-clusterer estimates.
-3. **Merge** (`bfe merge`). Predictions are joined back onto the footprints
-   by stable `building_id`. The output is a GeoJSON with
-   `predicted_floors` and `predicted_height_m` columns plus a summary
-   JSON and a distribution plot.
 
 ## Repository layout
 
