@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bfe"
+version = "0.1.0"
+description = "Reference implementation accompanying Arzoumanidis et al. (2026), ISPRS Annals: Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Arzoumanidis, L." },
+    { name = "As Samee, A.M." },
+    { name = "Kanna, E." },
+    { name = "Nguyen, S. H." },
+    { name = "Dehbi, Y." },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.26,<2.3",
+    "pandas>=2.1,<2.3",
+    "pyarrow>=15.0",
+    "geopandas>=0.14,<1.1",
+    "shapely>=2.0",
+    "pyproj>=3.6",
+    "fiona>=1.9",
+    "requests>=2.31",
+    "tenacity>=8.2",
+    "scikit-learn>=1.3",
+    "opencv-python-headless>=4.8",
+    "ultralytics>=8.1",
+    "torch>=2.1",
+    "pydantic>=2.5",
+    "pyyaml>=6.0",
+    "typer>=0.9",
+    "rich>=13.7",
+    "matplotlib>=3.8",
+    "osmnx>=1.9",
+]
+
+[project.scripts]
+bfe = "bfe.cli:app"
+
+[project.urls]
+Repository = "https://github.com/hcu-cml/citydb-buildingstoreys-ai"
+Issues = "https://github.com/hcu-cml/citydb-buildingstoreys-ai/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+bfe = ["py.typed"]

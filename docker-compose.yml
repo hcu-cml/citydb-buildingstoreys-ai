@@ -1,0 +1,25 @@
+# Convenience compose file for local development and pipeline runs.
+#
+#   docker compose build
+#   docker compose run --rm pipeline bfe pipeline --config /app/configs/heidelberg.yaml
+#
+# The MAPILLARY_ACCESS_TOKEN is injected from your local .env file, which is
+# not committed. Data, weights, and outputs are bind-mounted from the host.
+
+services:
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bfe:latest
+    env_file:
+      - .env
+    environment:
+      BFE_LOG_LEVEL: INFO
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./data:/app/data:ro
+      - ./models:/app/models:ro
+      - ./outputs:/app/outputs
+    # Override at runtime, e.g. `docker compose run --rm pipeline bfe fetch -c /app/configs/heidelberg.yaml`.
+    command: ["pipeline", "--config", "/app/configs/heidelberg.yaml"]

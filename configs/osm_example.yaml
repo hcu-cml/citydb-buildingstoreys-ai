@@ -1,0 +1,46 @@
+# Example configuration using OpenStreetMap building footprints.
+#
+# Useful when an official LoD2/LoD3 export is not available for the target
+# city. OSM building coverage and attribute quality vary; no ground-truth
+# storey count is attached unless OSM tags provide 'building:levels'.
+
+project: osm_example
+
+footprint:
+  kind: osm
+  # Fields below are still honored if OSM returns them; building:levels is
+  # common and can be used as a ground-truth comparison column.
+  id_field: osmid
+  height_field: "building:levels"
+
+mapillary:
+  bbox:
+    min_lon: 8.627700
+    min_lat: 49.310153
+    max_lon: 8.738668
+    max_lat: 49.437231
+  grid_divisions: 4
+  search_radius_m: 150.0
+  bearing_tolerance_deg: 90.0
+  max_images_per_building: 1
+  request_limit: 2000
+  max_pages_per_cell: 20
+  request_timeout_s: 30.0
+  per_cell_sleep_s: 2.0
+  per_page_sleep_s: 1.0
+
+detector:
+  weights: ../models/best.pt
+  confidence_threshold: 0.15
+  iou_threshold: 0.12
+  device: auto
+  target_class: window
+
+floor_estimator:
+  min_windows: 8
+  max_floors: 5
+  avg_floor_height_m: 2.5
+
+outputs:
+  root: ../outputs
+  run_id: null
