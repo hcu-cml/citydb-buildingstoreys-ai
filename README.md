@@ -77,7 +77,7 @@ image to an `nvidia/cuda` runtime; see comments in the `Dockerfile`.
 
 ## Configuration
 
-A minimal YAML config looks like:
+YAML config:
 
 ```yaml
 project: heidelberg
