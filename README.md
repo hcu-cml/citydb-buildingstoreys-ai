@@ -140,42 +140,6 @@ bfe merge   --config configs/heidelberg.yaml
 docker compose run --rm pipeline bfe pipeline --config /app/configs/heidelberg.yaml
 ```
 
-## Outputs
-
-Each run writes a timestamped directory:
-
-```
-outputs/<project>/<run_id>/
-  manifest.json
-  stage1_fetch/
-    mapillary_metadata.parquet
-    images/<building_id>_<idx>.jpg
-  stage2_detect/
-    predictions.parquet
-    annotated/<building_id>_<idx>.jpg
-  stage3_merge/
-    buildings_with_predictions.geojson
-    buildings_with_predictions.csv
-    summary.json
-    predicted_floors_distribution.png
-```
-
-`summary.json` reports total and matched building counts, the predicted
-storey distribution, truncation counts at `max_floors`, and (when a
-ground-truth height field exists) mean/median absolute error and RMSE
-against it.
-
-## Limitations
-
-- Floor estimation assumes a facade with reasonably regular window rows.
-  The published method caps predictions at `max_floors` (default 5);
-  truncated buildings are flagged in `summary.json` but reported at the
-  cap. Raise `max_floors` for mid- and high-rise neighborhoods.
-- Mapillary coverage is uneven. Buildings without a matching image are
-  returned with null predictions rather than being dropped.
-- Distances are computed on a spherical Earth. This is adequate at city
-  scale but not for high-precision geodesy.
-
 ## Troubleshooting
 
 If the code is not working for you or you run into problems, please
