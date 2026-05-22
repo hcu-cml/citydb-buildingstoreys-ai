@@ -112,9 +112,7 @@ If the code is not working for you or you run into problems, please
 [open an issue](https://github.com/hcu-cml/citydb-buildingstoreys-ai/issues)
 with your config, the command you ran, and the tail of the log.
 
-## License
 
-MIT. See `LICENSE`.
 
 ## Citation
 
