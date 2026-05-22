@@ -75,41 +75,7 @@ The image bind-mounts `./configs`, `./data`, `./models` (read-only) and
 `./outputs` (read-write). GPU inference is possible by switching the base
 image to an `nvidia/cuda` runtime; see comments in the `Dockerfile`.
 
-## Configuration
 
-YAML config:
-
-```yaml
-project: heidelberg
-
-footprint:
-  kind: file
-  path: ../data/Heidelberg_Center_Buildings_Storeys_CityGML_2025.geojson
-  crs: EPSG:25832
-  id_field: id
-  height_field: storeysAboveGround
-
-mapillary:
-  bbox:
-    min_lon: 8.627700
-    min_lat: 49.310153
-    max_lon: 8.738668
-    max_lat: 49.437231
-  grid_divisions: 4
-  search_radius_m: 150.0
-  bearing_tolerance_deg: 90.0
-
-detector:
-  weights: ../models/best.pt
-
-floor_estimator:
-  min_windows: 8
-  max_floors: 5
-  avg_floor_height_m: 2.5
-
-outputs:
-  root: ../outputs
-```
 
 Full reference: `configs/heidelberg.yaml`, `configs/osm_example.yaml`, and
 the pydantic models in `src/bfe/config.py`.
