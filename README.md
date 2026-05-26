@@ -1,12 +1,15 @@
 ## Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images
 
+This repository contains the source code, links to the datasets used and generated, and additional technical details related to our work. We present an end-to-end pipeline for the automatic estimation of building storeys to semantically enrich 3D city models. Our approach uses volunteered geographic information in the form of street-view imagery from Mapillary and applies a COCO-pretrained object detection model to identify windows in façade images as key visual indicators for estimating building storey counts. The detection pipeline is based on the YOLOv3 architecture and combines clustering methods such as Gaussian Mixtures and DBSCAN to infer the number of storeys. The resulting estimates enable the automatic augmentation of CityGML-based 3D city models by filling in missing semantic attributes.
+
 <img width="3840" height="2160" alt="Son_3DModels_3" src="https://github.com/user-attachments/assets/19b2af69-3023-4574-8c11-6fe6c48fd60a" />
 
-## Inputs
+
+## Inputs to run or retrain the pipeline:
+
+The following sections describe the input data required to run the end-to-end pipeline for estimating the number of storeys from street-view imagery.
 
 ### Building footprints
-
-Configure `footprint.kind` to `file` or `osm`.
 
 - **LoD2 CityGML-derived GeoJSON (Germany).** Many German state
   geoportals publish CityGML building models that can be exported to
@@ -14,6 +17,7 @@ Configure `footprint.kind` to `file` or `osm`.
   and carry a `storeysAboveGround` attribute that is used as ground truth
   for comparison. Place the file under `data/` and point `footprint.path`
   to it.
+  
 - **OpenStreetMap.** With `footprint.kind: osm`, building polygons inside
   the configured bounding box are downloaded via `osmnx`. Where available,
   the OSM tag `building:levels` is used as the ground-truth column.
@@ -23,7 +27,7 @@ Configure `footprint.kind` to `file` or `osm`.
 Mapillary images are retrieved via the Graph API. You must supply your own
 access token (see below). No credentials are stored in the repository.
 
-### Window detector
+## Window detector
 
 The pipeline uses a YOLOv3 checkpoint loaded through Ultralytics
 (`ultralytics.YOLO("best.pt")`). Drop the `.pt` file into `models/` or
