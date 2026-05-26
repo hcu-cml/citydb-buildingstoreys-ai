@@ -2,29 +2,13 @@
 
 <img width="3840" height="2160" alt="Son_3DModels_3" src="https://github.com/user-attachments/assets/19b2af69-3023-4574-8c11-6fe6c48fd60a" />
 
-
-## Repository layout
-
-```
-citydb-buildingstoreys-ai/
-  configs/           YAML configurations (heidelberg.yaml, osm_example.yaml)
-  src/bfe/           Python package
-  scripts/           Helper shell scripts
-  data/              User-supplied inputs (gitignored)
-  models/            User-supplied YOLO weights (gitignored)
-  outputs/           Pipeline outputs (gitignored)
-  Dockerfile
-  docker-compose.yml
-  pyproject.toml
-```
-
 ## Inputs
 
 ### Building footprints
 
 Configure `footprint.kind` to `file` or `osm`.
 
-- **LoD2/LoD3 CityGML-derived GeoJSON (Germany).** Many German state
+- **LoD2 CityGML-derived GeoJSON (Germany).** Many German state
   geoportals publish CityGML building models that can be exported to
   GeoJSON. These exports commonly use `EPSG:25832` (ETRS89 / UTM zone 32N)
   and carry a `storeysAboveGround` attribute that is used as ground truth
