@@ -11,7 +11,7 @@ from ..config import MapillaryConfig, PipelineConfig
 from ..io.geojson import load_footprints
 from ..io.metadata import MAPILLARY_METADATA_COLUMNS, write_parquet
 from ..logging import get_logger
-from .client import MapillaryClient
+from .client import MapillaryAuthError, MapillaryClient
 from .grid import split_bbox
 from .matching import match_images_to_building
 
@@ -24,6 +24,8 @@ def run_fetch(cfg: PipelineConfig, stage_dir: Path) -> Path:
     images_dir.mkdir(parents=True, exist_ok=True)
 
     buildings = load_footprints(cfg.footprint, bbox=cfg.mapillary.bbox)
+    centroids_lat, centroids_lon = _metric_centroids(buildings)
+
     all_images = _fetch_all_images(cfg.mapillary)
     if not all_images:
         logger.warning("No Mapillary images returned for bbox %s", cfg.mapillary.bbox.as_string())
@@ -32,17 +34,18 @@ def run_fetch(cfg: PipelineConfig, stage_dir: Path) -> Path:
     metadata: list[dict] = []
     matched_buildings = 0
     downloaded = 0
+    reused = 0
 
     for idx, row in enumerate(buildings.itertuples(index=False)):
-        centroid = getattr(row, "geometry").centroid
-        building_lat, building_lon = float(centroid.y), float(centroid.x)
+        building_lat = float(centroids_lat[idx])
+        building_lon = float(centroids_lon[idx])
         building_id = str(getattr(row, "building_id"))
         height_storeys = getattr(row, "height_storeys", None)
 
         if idx % 100 == 0:
             logger.info(
-                "Matching progress: %d/%d buildings (downloaded: %d)",
-                idx, len(buildings), downloaded,
+                "Matching progress: %d/%d buildings (downloaded: %d, reused: %d)",
+                idx, len(buildings), downloaded, reused,
             )
 
         matches = match_images_to_building(
@@ -63,7 +66,12 @@ def run_fetch(cfg: PipelineConfig, stage_dir: Path) -> Path:
 
             filename = f"{building_id}_{img_idx:02d}.jpg"
             dest = images_dir / filename
-            if not _download_image(session, match.thumb_url, dest):
+            already_present = dest.exists() and dest.stat().st_size > 0
+            if already_present:
+                reused += 1
+            elif _download_image(session, match.thumb_url, dest):
+                downloaded += 1
+            else:
                 continue
 
             metadata.append({
@@ -80,16 +88,29 @@ def run_fetch(cfg: PipelineConfig, stage_dir: Path) -> Path:
                 "captured_at": match.captured_at,
                 "height_storeys": _opt_float(height_storeys),
             })
-            downloaded += 1
 
     metadata_path = stage_dir / "mapillary_metadata.parquet"
     n_rows = write_parquet(metadata_path, metadata, MAPILLARY_METADATA_COLUMNS)
 
     logger.info(
-        "Stage 1 complete: %d buildings matched, %d images downloaded, %d rows at %s",
-        matched_buildings, downloaded, n_rows, metadata_path,
+        "Stage 1 complete: %d buildings matched, %d images downloaded, %d reused, %d rows at %s",
+        matched_buildings, downloaded, reused, n_rows, metadata_path,
     )
     return metadata_path
+
+
+def _metric_centroids(buildings):  # type: ignore[no-untyped-def]
+    """Compute building centroids in a metric CRS, then return (lat, lon) in WGS84."""
+    if len(buildings) == 0:
+        import numpy as np
+        return np.empty(0), np.empty(0)
+    try:
+        metric_crs = buildings.estimate_utm_crs()
+    except Exception:  # noqa: BLE001
+        metric_crs = "EPSG:3857"
+    geom_metric = buildings.geometry.to_crs(metric_crs)
+    centroids_wgs = geom_metric.centroid.to_crs("EPSG:4326")
+    return centroids_wgs.y.to_numpy(), centroids_wgs.x.to_numpy()
 
 
 def _fetch_all_images(cfg: MapillaryConfig) -> list[dict]:
@@ -110,6 +131,8 @@ def _fetch_all_images(cfg: MapillaryConfig) -> list[dict]:
         logger.info("Cell %d/%d: %s", idx, len(cells), cell.as_string())
         try:
             records = client.fetch_bbox(cell)
+        except MapillaryAuthError:
+            raise
         except Exception as exc:  # noqa: BLE001
             logger.warning("Cell %d failed: %s", idx, exc)
             continue

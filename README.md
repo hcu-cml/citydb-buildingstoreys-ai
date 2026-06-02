@@ -62,9 +62,29 @@ cp .env.example .env             # then edit .env and set MAPILLARY_ACCESS_TOKEN
 docker compose build
 ```
 
-The image bind-mounts `./configs`, `./data`, `./models` (read-only) and
-`./outputs` (read-write). GPU inference is possible by switching the base
-image to an `nvidia/cuda` runtime; see comments in the `Dockerfile`.
+The stack is split across two compose profiles so the lightweight pipeline
+doesn't pull the citydb images unless you need them:
+
+- `pipeline`  - the bfe container running stages 0–5 (volumes:
+  `./configs`, `./data`, `./models` read-only, `./outputs` read-write).
+- `citydb`    - 3DCityDB v5 Postgres + citydb-tool + a 3DCityDB Web Map
+  Client viewer + nginx for serving the 3D Tiles. Required for stages 4
+  and 5 (citydb enrichment + tile export).
+
+End-to-end, including building image, citydb import, enrichment, tile
+export, and viewer:
+
+```bash
+./scripts/run_pipeline.sh heidelberg
+```
+
+Then open:
+- Cesium viewer: <http://localhost:8000>
+- 3D Tiles:      <http://localhost:8080/tiles/tileset.json>
+- Run browser:   <http://localhost:8080/outputs/>
+
+GPU inference is possible by switching the base image to an `nvidia/cuda`
+runtime; see comments in the `Dockerfile`.
 
 
 
@@ -84,9 +104,12 @@ export MAPILLARY_ACCESS_TOKEN=...    # or put it in .env for Docker
 ```bash
 bfe pipeline --config configs/heidelberg.yaml
 # or stage by stage:
-bfe fetch   --config configs/heidelberg.yaml
-bfe detect  --config configs/heidelberg.yaml
-bfe merge   --config configs/heidelberg.yaml
+bfe extract   --config configs/heidelberg.yaml   # CityGML -> footprints.geojson
+bfe fetch     --config configs/heidelberg.yaml   # Mapillary
+bfe detect    --config configs/heidelberg.yaml   # YOLO
+bfe merge     --config configs/heidelberg.yaml   # join predictions onto footprints
+bfe enrich    --config configs/heidelberg.yaml   # write storeys into citydb
+bfe visualize --config configs/heidelberg.yaml   # 3D Tiles + viewer config
 ```
 
 ### Docker

@@ -1,9 +1,9 @@
 # Heidelberg, Germany: end-to-end pipeline configuration.
 #
 # Inputs:
-#   - LoD2/LoD3 CityGML-derived building footprints exported as GeoJSON,
-#     typically in EPSG:25832 (ETRS89 / UTM zone 32N) as published by
-#     German state geoportals (e.g. LGL Baden-Wuerttemberg).
+#   - LoD2 CityGML file under data/. Stage 0 extracts a bbox-rectangle
+#     GeoJSON from it; the bbox-extraction algorithm matches the published
+#     paper.
 #   - Mapillary Graph API street-level imagery inside the bounding box.
 #
 # Outputs:
@@ -12,10 +12,9 @@
 project: heidelberg
 
 footprint:
-  kind: file
-  # Drop the CityGML-derived GeoJSON here, or point to its absolute path.
-  path: ../data/Heidelberg_Center_Buildings_Storeys_CityGML_2025.geojson
-  # The source publishes coordinates in UTM zone 32N; override if missing.
+  kind: citygml
+  citygml_path: ../data/heidelberg_center_citygml2_lod2_2025.gml
+  # `path` is auto-set at runtime to <run>/stage0_extract/footprints.geojson.
   crs: EPSG:25832
   id_field: id
   height_field: storeysAboveGround
@@ -51,3 +50,26 @@ floor_estimator:
 outputs:
   root: ../outputs
   run_id: null
+
+enrichment:
+  enabled: true
+  citydb:
+    host: citydb-postgres
+    port: 5432
+    database: heidelberg_citydb5
+    user: postgres
+    # BFE_CITYDB_PASSWORD is read from the .env file.
+
+visualization:
+  enabled: true
+  basemap: arcgis
+  styling:
+    by: storeysAboveGround
+    color_rule:
+      "2": cyan
+      "3": magenta
+      "4": yellow
+      "5": green
+      default: gray
+  nginx_port: 8080
+  viewer_port: 8000

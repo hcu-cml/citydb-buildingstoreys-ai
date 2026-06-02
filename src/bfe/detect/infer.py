@@ -9,7 +9,7 @@ from ..io.metadata import PREDICTIONS_COLUMNS, read_parquet, write_parquet
 from ..logging import get_logger
 from .floors import estimate_floors
 from .model import load_yolo_model, resolve_device
-from .windows import detect_windows
+from .windows import assert_target_class_supported, detect_windows
 
 logger = get_logger(__name__)
 
@@ -33,6 +33,7 @@ def run_detect(cfg: PipelineConfig, fetch_dir: Path, stage_dir: Path) -> Path:
     device = resolve_device(cfg.detector.device)
     logger.info("YOLO inference device: %s", device)
     model = load_yolo_model(cfg.detector.weights)
+    assert_target_class_supported(model, cfg.detector.target_class)
 
     predictions: list[dict] = []
     n_total = len(metadata)
@@ -66,7 +67,7 @@ def run_detect(cfg: PipelineConfig, fetch_dir: Path, stage_dir: Path) -> Path:
             predictions.append(base)
             continue
 
-        window_boxes = detect_windows(model, image_path, cfg.detector, device)
+        window_boxes = detect_windows(model, image, cfg.detector, device)
         base["windows_detected"] = len(window_boxes)
 
         if len(window_boxes) <= cfg.floor_estimator.min_windows:

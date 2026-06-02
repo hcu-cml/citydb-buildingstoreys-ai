@@ -17,7 +17,7 @@ def join_predictions(cfg: PipelineConfig, predictions_path: Path) -> gpd.GeoData
     buildings = load_footprints(cfg.footprint, bbox=cfg.mapillary.bbox)
     predictions = read_parquet(predictions_path)
 
-    predictions = predictions.drop_duplicates(subset=["building_id"], keep="first")
+    aggregated = _aggregate_per_building(predictions)
 
     keep_cols = [
         "building_id",
@@ -26,8 +26,9 @@ def join_predictions(cfg: PipelineConfig, predictions_path: Path) -> gpd.GeoData
         "height_m",
         "truncated_at_max_floors",
         "skipped_reason",
+        "n_images",
     ]
-    subset = predictions[keep_cols].rename(
+    subset = aggregated[keep_cols].rename(
         columns={"floors": "predicted_floors", "height_m": "predicted_height_m"}
     )
 
@@ -40,6 +41,7 @@ def join_predictions(cfg: PipelineConfig, predictions_path: Path) -> gpd.GeoData
     merged["truncated_at_max_floors"] = (
         merged["truncated_at_max_floors"].fillna(False).astype(bool)
     )
+    merged["n_images"] = pd.to_numeric(merged["n_images"], errors="coerce").astype("Int64")
 
     logger.info(
         "Joined predictions: %d footprints, %d with a floor prediction",
@@ -47,3 +49,38 @@ def join_predictions(cfg: PipelineConfig, predictions_path: Path) -> gpd.GeoData
         int(merged["predicted_floors"].notna().sum()),
     )
     return merged
+
+
+def _aggregate_per_building(predictions: pd.DataFrame) -> pd.DataFrame:
+    scored = predictions[predictions["floors"].notna()].copy()
+    skipped = predictions[predictions["floors"].isna()].copy()
+
+    if scored.empty:
+        skipped = skipped.drop_duplicates(subset=["building_id"], keep="first")
+        skipped["n_images"] = 0
+        return skipped
+
+    def _mode_int(series: pd.Series) -> float:
+        values = series.dropna().astype(int)
+        if values.empty:
+            return float("nan")
+        modes = values.mode()
+        return float(modes.iloc[0]) if not modes.empty else float("nan")
+
+    grouped = (
+        scored.groupby("building_id", as_index=False)
+        .agg(
+            windows_detected=("windows_detected", "sum"),
+            floors=("floors", _mode_int),
+            height_m=("height_m", "mean"),
+            truncated_at_max_floors=("truncated_at_max_floors", "any"),
+            n_images=("floors", "size"),
+        )
+    )
+    grouped["skipped_reason"] = pd.NA
+
+    skipped_only = skipped[~skipped["building_id"].isin(grouped["building_id"])].copy()
+    skipped_only = skipped_only.drop_duplicates(subset=["building_id"], keep="first")
+    skipped_only["n_images"] = 0
+
+    return pd.concat([grouped, skipped_only], ignore_index=True, sort=False)

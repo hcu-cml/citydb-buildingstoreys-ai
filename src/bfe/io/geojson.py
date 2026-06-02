@@ -15,7 +15,7 @@ WGS84 = "EPSG:4326"
 
 
 def load_footprints(source: FootprintSource, bbox: Optional[BBox] = None) -> gpd.GeoDataFrame:
-    if source.kind == "file":
+    if source.kind in ("file", "citygml"):
         gdf = _load_file(source.path, crs_override=source.crs)
     elif source.kind == "osm":
         if bbox is None:
@@ -59,10 +59,27 @@ def _load_osm(bbox: BBox) -> gpd.GeoDataFrame:
     import osmnx as ox
 
     logger.info("Querying OpenStreetMap buildings for bbox %s", bbox.as_string())
-    polygon_gdf = ox.features_from_bbox(
-        bbox=(bbox.min_lat, bbox.max_lat, bbox.min_lon, bbox.max_lon),
-        tags={"building": True},
-    )
+
+    # osmnx changed its `features_from_bbox` signature between 1.9 and 2.0:
+    #   - 1.9.x: features_from_bbox(north, south, east, west, tags)
+    #   - >=2.0: features_from_bbox(bbox=(left, bottom, right, top), tags=...)
+    # Detect at runtime so the same code works against both pins.
+    ox_version = tuple(int(p) for p in ox.__version__.split(".")[:2] if p.isdigit())
+    tags = {"building": True}
+    if ox_version >= (2, 0):
+        polygon_gdf = ox.features_from_bbox(
+            bbox=(bbox.min_lon, bbox.min_lat, bbox.max_lon, bbox.max_lat),
+            tags=tags,
+        )
+    else:
+        polygon_gdf = ox.features_from_bbox(
+            north=bbox.max_lat,
+            south=bbox.min_lat,
+            east=bbox.max_lon,
+            west=bbox.min_lon,
+            tags=tags,
+        )
+
     polygon_gdf = polygon_gdf[polygon_gdf.geometry.type.isin(["Polygon", "MultiPolygon"])].copy()
     if polygon_gdf.crs is None:
         polygon_gdf = polygon_gdf.set_crs(WGS84)

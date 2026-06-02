@@ -1,13 +1,12 @@
-# Convenience compose file for local development and pipeline runs.
+# Profiles:
+#   pipeline  - bfe pipeline container (stages 0-5)
+#   citydb    - postgres + citydb-tool + viewer + nginx-tiles for stages 4-5
 #
-#   docker compose build
-#   docker compose run --rm pipeline bfe pipeline --config /app/configs/heidelberg.yaml
-#
-# The MAPILLARY_ACCESS_TOKEN is injected from your local .env file, which is
-# not committed. Data, weights, and outputs are bind-mounted from the host.
+# End-to-end run: ./scripts/run_pipeline.sh <area>
 
 services:
   pipeline:
+    profiles: ["pipeline"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -21,5 +20,91 @@ services:
       - ./data:/app/data:ro
       - ./models:/app/models:ro
       - ./outputs:/app/outputs
-    # Override at runtime, e.g. `docker compose run --rm pipeline bfe fetch -c /app/configs/heidelberg.yaml`.
+      - ./scripts:/app/scripts:ro
     command: ["pipeline", "--config", "/app/configs/heidelberg.yaml"]
+
+  citydb-postgres:
+    profiles: ["citydb"]
+    image: 3dcitydb/3dcitydb-pg:15-3.3-5
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${BFE_CITYDB_PASSWORD:-citydb}
+      POSTGRES_DB: ${BFE_CITYDB_NAME:-heidelberg_citydb5}
+      SRID: ${BFE_CITYDB_SRID:-25832}
+      SRS_NAME: ${BFE_CITYDB_SRS_NAME:-urn:ogc:def:crs:EPSG::25832}
+    ports:
+      - "5432:5432"
+    volumes:
+      - citydb_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  citydb-tool:
+    profiles: ["citydb"]
+    image: 3dcitydb/citydb-tool:latest
+    depends_on:
+      citydb-postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      PGHOST: citydb-postgres
+      PGPORT: 5432
+      PGDATABASE: ${BFE_CITYDB_NAME:-heidelberg_citydb5}
+      PGUSER: postgres
+      PGPASSWORD: ${BFE_CITYDB_PASSWORD:-citydb}
+    volumes:
+      - ./data:/app/data:ro
+      - ./outputs:/app/outputs
+
+  enrich:
+    profiles: ["citydb"]
+    image: bfe:latest
+    depends_on:
+      citydb-postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      BFE_LOG_LEVEL: INFO
+      PGHOST: citydb-postgres
+      PGPORT: 5432
+      BFE_CITYDB_PASSWORD: ${BFE_CITYDB_PASSWORD:-citydb}
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./outputs:/app/outputs
+      - ./scripts:/app/scripts:ro
+    entrypoint: ["bfe"]
+    command: ["enrich", "--config", "/app/configs/heidelberg.yaml"]
+
+  nginx-tiles:
+    profiles: ["citydb", "viewer"]
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./outputs:/usr/share/nginx/html/outputs:ro
+      - ./web:/usr/share/nginx/html/web:ro
+      - ./infra/nginx-tiles.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost/healthz"]
+      interval: 10s
+      retries: 3
+
+  viewer:
+    profiles: ["citydb"]
+    image: tumgis/3dcitydb-web-map:alpine-latest
+    ports:
+      - "8000:8000"
+    depends_on:
+      - nginx-tiles
+    environment:
+      CONFIG_URL: http://nginx-tiles/3dwebmc/config.json
+    restart: unless-stopped
+
+volumes:
+  citydb_pg_data:

@@ -63,3 +63,9 @@ outputs/
 # OS
 .DS_Store
 Thumbs.db
+
+# Spec/scratch
+.kiro/
+
+# Postgres bind volumes (if ever bound to host)
+citydb_pg_data/

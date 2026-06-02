@@ -1,20 +1,37 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import Any
 
 from ..config import DetectorConfig
 
 BBox = tuple[int, int, int, int]
 
 
+def assert_target_class_supported(model, target_class: str) -> None:  # type: ignore[no-untyped-def]
+    target = target_class.lower()
+    names_attr: Any = getattr(model, "names", {})
+    if isinstance(names_attr, dict):
+        names_iter = names_attr.values()
+    else:
+        names_iter = names_attr
+    available = {str(n).lower() for n in names_iter}
+    if not available:
+        return
+    if target not in available:
+        raise ValueError(
+            f"Detector target_class={target_class!r} is not in the model's class list. "
+            f"Available classes: {sorted(available)}"
+        )
+
+
 def detect_windows(
     model,  # type: ignore[no-untyped-def]
-    image_path: Path,
+    image,  # type: ignore[no-untyped-def]
     cfg: DetectorConfig,
     device: str,
 ) -> list[BBox]:
     results = model.predict(
-        source=str(image_path),
+        source=image,
         conf=cfg.confidence_threshold,
         iou=cfg.iou_threshold,
         device=device,

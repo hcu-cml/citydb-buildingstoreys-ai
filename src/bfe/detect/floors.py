@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
-from statistics import mode
 from typing import Sequence
 
 import numpy as np
@@ -47,9 +47,27 @@ def estimate_floors(window_boxes: Sequence[BBox]) -> FloorEstimate:
     floors_gmm = _floors_gmm(vertical_gaps)
     floors_db = _floors_dbscan(vertical_gaps, n_windows=len(window_boxes))
 
-    valid = [v for v in (floors_km, floors_gmm, floors_db) if v is not None and v >= 1]
-    final = max(1, int(mode(valid))) if valid else 1
+    final = _mode_of_three(floors_km, floors_gmm, floors_db)
     return FloorEstimate(final, floors_km, floors_gmm, floors_db)
+
+
+def _mode_of_three(
+    floors_km: int | None,
+    floors_gmm: int | None,
+    floors_db: int | None,
+) -> int:
+    candidates = [v for v in (floors_km, floors_gmm, floors_db) if v is not None and v >= 1]
+    if not candidates:
+        return 1
+    counts = Counter(candidates)
+    top_count = counts.most_common(1)[0][1]
+    if top_count >= 2:
+        for v in candidates:
+            if counts[v] == top_count:
+                return max(1, int(v))
+    if floors_km is not None and floors_km >= 1:
+        return max(1, int(floors_km))
+    return max(1, int(candidates[0]))
 
 
 def _floors_kmeans(vertical_gaps: np.ndarray) -> int | None:
@@ -81,7 +99,7 @@ def _floors_dbscan(vertical_gaps: np.ndarray, n_windows: int) -> int | None:
         unique = set(labels.tolist())
         unique.discard(-1)
         if len(unique) < 2:
-            return n_windows
+            return None
         cluster_means = {
             label: float(vertical_gaps[labels == label].mean()) for label in unique
         }

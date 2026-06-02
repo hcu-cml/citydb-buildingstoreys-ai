@@ -41,6 +41,7 @@ dependencies = [
     "rich>=13.7",
     "matplotlib>=3.8",
     "osmnx>=1.9",
+    "psycopg2-binary>=2.9",
 ]
 
 [project.scripts]
