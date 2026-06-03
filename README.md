@@ -137,7 +137,7 @@ If you use this code, please cite:
 	author = {Lukas Arzoumanidis and Al Maimun As Samee and Elmehdi Kanna and Son Nguyen and Youness Dehbi},
 	title = {Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images},
 	year = {2026},
-  journal = {ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences},
+    journal = {ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences},
 	booktitle = {ISPRS Congress 2026 Toronto, Canada},
 	url = {https://repos.hcu-hamburg.de/handle/hcu/1248},
 }
