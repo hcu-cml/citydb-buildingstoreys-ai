@@ -1,4 +1,4 @@
-## Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images
+## [Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images](https://repos.hcu-hamburg.de/handle/hcu/1248)
 
 This repository contains the source code, links to the datasets used and generated, and additional technical details related to our work. We present an end-to-end pipeline for the automatic estimation of building storeys to semantically enrich 3D city models. Our approach uses volunteered geographic information in the form of street-view imagery from Mapillary and applies a COCO-pretrained object detection model to identify windows in façade images as key visual indicators for estimating building storey counts. The detection pipeline is based on the YOLOv3 architecture and combines clustering methods such as Gaussian Mixtures and DBSCAN to infer the number of storeys. The resulting estimates enable the automatic augmentation of CityGML-based 3D city models by filling in missing semantic attributes.
 
