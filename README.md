@@ -133,13 +133,12 @@ with your config, the command you ran, and the tail of the log.
 If you use this code, please cite:
 
 ```bibtex
-@Article{isprs-annals-X-,
-  AUTHOR  = {Arzoumanidis, L. and As Samee, A.M. and Kanna, E. and Nguyen, S. H. and Dehbi, Y.},
-  TITLE   = {Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images},
-  JOURNAL = {ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences},
-  VOLUME  = {},
-  YEAR    = {2026},
-  PAGES   = {},
-  DOI     = {}
+@Article{citydb-buildingstoreys-ai,
+	author = {Lukas Arzoumanidis and Al Maimun As Samee and Elmehdi Kanna and Son Nguyen and Youness Dehbi},
+	title = {Domain-Adaptive Object Detection for Enriching Semantic 3D City Models with Building Storeys from Street-View Images},
+	year = {2026},
+  journal = {ISPRS Annals of the Photogrammetry, Remote Sensing and Spatial Information Sciences},
+	booktitle = {ISPRS Congress 2026 Toronto, Canada},
+	url = {https://repos.hcu-hamburg.de/handle/hcu/1248},
 }
 ```
